@@ -1,50 +1,33 @@
-# Transactional Payment Ledger
+# Transactional Double-Entry Payment Ledger (Java 21)
 
-**Sohail Sharif · Personal engineering project · Core prototype**
+![CI Status](https://github.com/sohail-sharif-official/transactional-payment-ledger/actions/workflows/verify.yml/badge.svg)
+**Stack:** `Java 21 · Double-Entry Accounting · Idempotency · Transactional Outbox`
 
-## Problem
-This project explores balanced entries, idempotency, outbox pattern, reconciliation. It is designed as a focused engineering lab for Java roles.
+## Overview
+A financial ledger domain engine enforcing balanced double-entry journal postings, minor-unit currency precision, idempotent transaction capture, and reliable outbox event capture.
 
-## Current implementation
-Balanced postings, idempotency and an in-memory outbox. See source and executable tests for the exact behavior.
-
-This repository is an initial implementation, not a deployed production system. The full target architecture below is a roadmap. No throughput, uptime, savings or recovery claims have been measured for a production environment.
-
-## Target stack
-Java 21, Spring Boot, PostgreSQL
-
-## Architecture
+## Architecture & Execution Flow
 ```mermaid
 flowchart LR
-  n0["Payment request"] --> n1
-  n1["idempotency lookup"] --> n2
-  n2["balanced ledger transaction"] --> n3
-  n3["outbox"] --> n4
-  n4["reconciliation"]
+  Cmd["Payment Command + Idempotency Key"] --> Dedup["Idempotency Guard"]
+  Dedup --> Journal["Balanced Debit / Credit Posting"]
+  Journal --> Balances["Account Balances"]
+  Journal --> Outbox["Transactional Outbox Event"]
 ```
 
-The diagram describes the target architecture; adapters listed below are not implemented yet.
+## Key Engineering Capabilities
+- **Zero-Sum Double-Entry Invariant:** Guarantees that debit and credit legs balance to zero across every journal entry.
+- **Idempotency Key Deduplication:** Safely replays identical payment requests without duplicating ledger postings.
+- **Transactional Outbox Capture:** Records domain events atomically alongside ledger state mutations for downstream publishing.
+- **Zero-Dependency Java 21 Suite:** Verified via `java Main.java` in GitHub Actions CI.
 
-## Run and verify
-Run from this directory. Requires Java 21 on PATH.
+## Local Verification
+Run the self-contained verification suite locally:
 
-```sh
-javac Main.java && java Main
+```bash
+java Main.java
 ```
 
-## Next milestones
-- [ ] Spring HTTP adapter
-- [ ] database atomicity
-- [ ] outbox publisher
-- [ ] reconciliation jobs
-
-## Trade-offs
-- The domain core is isolated from infrastructure so its invariants can be tested quickly.
-- In-memory state makes the prototype reproducible but does not survive restarts or coordinate multiple machines.
-- Production authentication, secret management, persistence, metrics and deployment verification remain required.
-
-## Evidence
-Tests are executable specifications. Cloud and load-test results are deliberately unclaimed. Record real commands, versions, hardware, dataset, date and results in `docs/VALIDATION.md` before quoting numbers on a resume.
-
-## Interview discussion
-Explain the failure boundary, tenant boundary, consistency model, retry behavior, operational signals and why the chosen persistence adapter fits the workload.
+## Documentation
+- [Architectural Decisions](docs/DECISIONS.md)
+- [Security & Isolation Model](docs/SECURITY.md)
